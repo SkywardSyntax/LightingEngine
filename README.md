@@ -1,13 +1,29 @@
-# GitHub Codespaces ♥️ Next.js
+# Basic Lighting Engine
 
-Welcome to your shiny new Codespace running Next.js! We've got everything fired up and running for you to explore Next.js.
+This project demonstrates a basic lighting engine using HTML5 canvas and JavaScript.
 
-You've got a blank canvas to work on from a git perspective as well. There's a single initial commit with the what you're seeing right now - where you go from here is up to you!
-
-Everything you do here is contained within this one codespace. There is no repository on GitHub yet. If and when you’re ready you can click "Publish Branch" and we’ll create your repository and push up your project. If you were just exploring then and have no further need for this code then you can simply delete your codespace and it's gone forever.
+## Getting Started
 
 To run this application:
 
-```
-npm run dev
-```
+1. Install dependencies:
+   ```
+   npm install
+   ```
+
+2. Run the development server:
+   ```
+   npm run dev
+   ```
+
+3. Open your browser and navigate to `http://localhost:3000` to see the lighting engine in action.
+
+## Project Structure
+
+- `components/LightingEngine.js`: Contains the lighting engine logic.
+- `pages/index.js`: The main page that renders the lighting engine.
+- `global.css`: Global styles for the application.
+
+## License
+
+This project is licensed under the MIT License.
