@@ -24,6 +24,10 @@ To run this application:
 - `pages/index.js`: The main page that renders the lighting engine.
 - `global.css`: Global styles for the application.
 
+## Advanced Shadow Calculations
+
+The lighting engine now includes advanced shadow calculations using shadow mapping. Shadow maps are generated for each light source and used to determine shadowed areas in the scene.
+
 ## License
 
 This project is licensed under the MIT License.
