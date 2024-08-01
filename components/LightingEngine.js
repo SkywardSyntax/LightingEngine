@@ -34,31 +34,44 @@ const LightingEngine = () => {
     return vec3.normalize(normal, normal);
   };
 
+  const traceRay = (origin, direction, heightMap) => {
+    const stepSize = 0.5 / Math.max(Math.abs(direction[0]), Math.abs(direction[1]));
+    let currentPos = vec3.clone(origin);
+    for (let t = 0; t < 1.0; t += stepSize) {
+      vec3.add(currentPos, currentPos, vec3.scale(vec3.create(), direction, stepSize));
+      const currentHeight = heightMap[Math.floor(currentPos[1])] ? heightMap[Math.floor(currentPos[1])][Math.floor(currentPos[0])] : 0;
+      if (currentPos[2] < currentHeight) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   const generateShadowMap = (lightSource, heightMap) => {
     const shadowMap = new Float32Array(heightMap.length * heightMap[0].length);
     for (let y = 0; y < heightMap.length; y++) {
       for (let x = 0; x < heightMap[0].length; x++) {
         const lightPos = lightSource.position;
         const lightDir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), lightPos, vec3.fromValues(x, y, heightMap[y][x])));
-        const stepSize = 0.5 / Math.max(Math.abs(lightDir[0]), Math.abs(lightDir[1]));
-        let currentPos = vec3.fromValues(x, y, heightMap[y][x]);
-        let inShadow = false;
-        for (let t = 0; t < 1.0; t += stepSize) {
-          vec3.add(currentPos, currentPos, vec3.scale(vec3.create(), lightDir, stepSize));
-          const currentHeight = heightMap[Math.floor(currentPos[1])] ? heightMap[Math.floor(currentPos[1])][Math.floor(currentPos[0])] : 0;
-          if (currentPos[2] < currentHeight) {
-            inShadow = true;
-            break;
-          }
-        }
-        shadowMap[y * heightMap[0].length + x] = inShadow ? 1.0 : 0.0;
+        shadowMap[y * heightMap[0].length + x] = traceRay(vec3.fromValues(x, y, heightMap[y][x]), lightDir, heightMap) ? 1.0 : 0.0;
       }
     }
     return shadowMap;
   };
 
   const calculateShadow = (x, y, shadowMap, heightMap) => {
-    return shadowMap[y * heightMap[0].length + x] === 1.0;
+    const sampleRadius = 1;
+    let shadow = 0.0;
+    for (let dy = -sampleRadius; dy <= sampleRadius; dy++) {
+      for (let dx = -sampleRadius; dx <= sampleRadius; dx++) {
+        const sampleX = x + dx;
+        const sampleY = y + dy;
+        if (heightMap[sampleY] && heightMap[sampleY][sampleX] !== undefined) {
+          shadow += shadowMap[sampleY * heightMap[0].length + sampleX];
+        }
+      }
+    }
+    return shadow / ((2 * sampleRadius + 1) ** 2);
   };
 
   const calculateGlobalIllumination = (x, y, heightMap) => {
@@ -171,11 +184,9 @@ const LightingEngine = () => {
 
           lightSources.forEach((lightSource, index) => {
             const lightDir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), lightSource.position, vec3.fromValues(x, y, heightMap[y][x])));
-            const inShadow = calculateShadow(x, y, shadowMaps[index], heightMap);
+            const shadowFactor = calculateShadow(x, y, shadowMaps[index], heightMap);
 
-            if (!inShadow) {
-              color += calculatePhongShading(normal, lightDir, viewDir, lightSource.intensity);
-            }
+            color += (1.0 - shadowFactor) * calculatePhongShading(normal, lightDir, viewDir, lightSource.intensity);
           });
 
           color += globalIllumination;

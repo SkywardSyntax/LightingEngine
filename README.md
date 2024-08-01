@@ -26,7 +26,7 @@ To run this application:
 
 ## Advanced Shadow Calculations
 
-The lighting engine now includes advanced shadow calculations using shadow mapping. Shadow maps are generated for each light source and used to determine shadowed areas in the scene.
+The lighting engine now includes advanced shadow calculations using ray tracing for more realistic lighting. Shadow maps are generated for each light source and used to determine shadowed areas in the scene.
 
 ## License
 
