@@ -11,6 +11,29 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
     { position: vec3.fromValues(100, 75, 25), intensity: 0.3 }
   ];
 
+  const lightingEnvironments = {
+    default: {
+      ambientLight: [0.2, 0.2, 0.2],
+      lightColor: [1.0, 1.0, 1.0],
+      lightPosition: [10.0, 10.0, 10.0]
+    },
+    sunset: {
+      ambientLight: [0.3, 0.2, 0.2],
+      lightColor: [1.0, 0.5, 0.3],
+      lightPosition: [5.0, 5.0, 5.0]
+    },
+    night: {
+      ambientLight: [0.1, 0.1, 0.2],
+      lightColor: [0.5, 0.5, 1.0],
+      lightPosition: [15.0, 15.0, 15.0]
+    },
+    studio: {
+      ambientLight: [0.4, 0.4, 0.4],
+      lightColor: [1.0, 1.0, 1.0],
+      lightPosition: [8.0, 8.0, 8.0]
+    }
+  };
+
   const calculatePhongShading = (normal, lightDir, viewDir, lightIntensity) => {
     const ambient = 0.1;
     const diffuse = Math.max(vec3.dot(normal, lightDir), 0.0);
@@ -153,8 +176,9 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
     return true;
   };
 
-  const createCubeGeometry = () => {
+  const createSceneGeometry = () => {
     const vertices = new Float32Array([
+      // Cube 1
       -1, -1, -1,
       1, -1, -1,
       1, 1, -1,
@@ -163,15 +187,32 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
       1, -1, 1,
       1, 1, 1,
       -1, 1, 1,
+      // Cube 2
+      -2, -2, -2,
+      2, -2, -2,
+      2, 2, -2,
+      -2, 2, -2,
+      -2, -2, 2,
+      2, -2, 2,
+      2, 2, 2,
+      -2, 2, 2,
     ]);
 
     const indices = new Uint16Array([
+      // Cube 1
       0, 1, 2, 2, 3, 0,
       4, 5, 6, 6, 7, 4,
-      0, 1, 5, 5, 4, 0,
+       0, 1, 5, 5, 4, 0,
       2, 3, 7, 7, 6, 2,
       0, 3, 7, 7, 4, 0,
       1, 2, 6, 6, 5, 1,
+      // Cube 2
+      8, 9, 10, 10, 11, 8,
+      12, 13, 14, 14, 15, 12,
+      8, 9, 13, 13, 12, 8,
+      10, 11, 15, 15, 14, 10,
+      8, 11, 15, 15, 12, 8,
+      9, 10, 14, 14, 13, 9,
     ]);
 
     return { vertices, indices };
@@ -194,14 +235,14 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
     return 1.0 - occlusion / ((2 * sampleRadius + 1) ** 2);
   };
 
-  const renderCube = (gl, program, cube) => {
+  const renderScene = (gl, program, scene) => {
     const vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, cube.vertices, gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, scene.vertices, gl.STATIC_DRAW);
 
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, cube.indices, gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, scene.indices, gl.STATIC_DRAW);
 
     const positionLocation = gl.getAttribLocation(program, 'a_position');
     gl.enableVertexAttribArray(positionLocation);
@@ -217,23 +258,38 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
     gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix);
     gl.uniformMatrix4fv(uProjectionMatrix, false, projectionMatrix);
 
-    gl.drawElements(gl.TRIANGLES, cube.indices.length, gl.UNSIGNED_SHORT, 0);
+    // Apply proper lighting calculations
+    const normalMatrix = mat4.create();
+    mat4.invert(normalMatrix, modelViewMatrix);
+    mat4.transpose(normalMatrix, normalMatrix);
+    const uNormalMatrix = gl.getUniformLocation(program, 'u_normalMatrix');
+    gl.uniformMatrix4fv(uNormalMatrix, false, normalMatrix);
+
+    const uLightPosition = gl.getUniformLocation(program, 'u_lightPosition');
+    const uLightColor = gl.getUniformLocation(program, 'u_lightColor');
+    const uAmbientLight = gl.getUniformLocation(program, 'u_ambientLight');
+    gl.uniform3fv(uLightPosition, [10.0, 10.0, 10.0]);
+    gl.uniform3fv(uLightColor, [1.0, 1.0, 1.0]);
+    gl.uniform3fv(uAmbientLight, [0.2, 0.2, 0.2]);
+
+    gl.drawElements(gl.TRIANGLES, scene.indices.length, gl.UNSIGNED_SHORT, 0);
   };
 
-  const drawCube = (gl, program, cube) => {
+  const drawScene = (gl, program, scene) => {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    renderCube(gl, program, cube);
+    renderScene(gl, program, scene);
   };
 
-  const animateCube = (cube, angle) => {
+  const animateCube = (scene, deltaTime) => {
+    const rotationSpeed = 0.005;
     const rotationMatrix = mat4.create();
-    mat4.rotateY(rotationMatrix, rotationMatrix, angle);
-    for (let i = 0; i < cube.vertices.length; i += 3) {
-      const vertex = vec3.fromValues(cube.vertices[i], cube.vertices[i + 1], cube.vertices[i + 2]);
+    mat4.rotateY(rotationMatrix, rotationMatrix, rotationSpeed * deltaTime);
+    for (let i = 0; i < scene.vertices.length; i += 3) {
+      const vertex = vec3.fromValues(scene.vertices[i], scene.vertices[i + 1], scene.vertices[i + 2]);
       vec3.transformMat4(vertex, vertex, rotationMatrix);
-      cube.vertices[i] = vertex[0];
-      cube.vertices[i + 1] = vertex[1];
-      cube.vertices[i + 2] = vertex[2];
+      scene.vertices[i] = vertex[0];
+      scene.vertices[i + 1] = vertex[1];
+      scene.vertices[i + 2] = vertex[2];
     }
   };
 
@@ -260,11 +316,15 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
 
     const fragmentShaderSource = `
       precision mediump float;
+      uniform vec3 u_lightPosition;
+      uniform vec3 u_lightColor;
+      uniform vec3 u_ambientLight;
       void main() {
-        vec2 uv = gl_FragCoord.xy / vec2(800.0, 600.0);
-        float noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
-        float fluffiness = smoothstep(0.4, 0.6, noise);
-        gl_FragColor = vec4(0.75, 0.75, 0.75, 1.0) * fluffiness;
+        vec3 lightDir = normalize(u_lightPosition - vec3(0.0, 0.0, 0.0));
+        float diff = max(dot(vec3(0.0, 0.0, 1.0), lightDir), 0.0);
+        vec3 diffuse = diff * u_lightColor;
+        vec3 ambient = u_ambientLight;
+        gl_FragColor = vec4(diffuse + ambient, 1.0);
       }
     `;
 
@@ -288,17 +348,29 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
 
     gl.useProgram(program);
 
-    const cube = createCubeGeometry();
-    let angle = 0;
+    const scene = createSceneGeometry();
+    let previousTime = 0;
 
-    const render = () => {
-      animateCube(cube, angle);
-      drawCube(gl, program, cube);
-      angle += 0.01;
+    const render = (currentTime) => {
+      const deltaTime = currentTime - previousTime;
+      previousTime = currentTime;
+      animateCube(scene, deltaTime);
+      drawScene(gl, program, scene);
       requestAnimationFrame(render);
     };
 
-    render();
+    const applyLightingEnvironment = (environment) => {
+      const { ambientLight, lightColor, lightPosition } = lightingEnvironments[environment];
+      const uLightPosition = gl.getUniformLocation(program, 'u_lightPosition');
+      const uLightColor = gl.getUniformLocation(program, 'u_lightColor');
+      const uAmbientLight = gl.getUniformLocation(program, 'u_ambientLight');
+      gl.uniform3fv(uLightPosition, lightPosition);
+      gl.uniform3fv(uLightColor, lightColor);
+      gl.uniform3fv(uAmbientLight, ambientLight);
+    };
+
+    applyLightingEnvironment(currentLightingEnvironment);
+    requestAnimationFrame(render);
   }, [currentLightingEnvironment]);
 
   return <canvas ref={canvasRef} width={800} height={600} />;

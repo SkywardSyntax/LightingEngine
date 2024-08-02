@@ -46,6 +46,10 @@ To switch between lighting environments, simply click the corresponding button o
 
 The cube now has a fluffy texture like a carpet and spins at a constant speed. The texture is achieved by modifying the fragment shader, and the constant rotation speed is achieved by modifying the `animateCube` function in `components/LightingEngine.js`.
 
+## Constant Cube Rotation
+
+The cube now rotates at a constant speed. The `animateCube` function in `components/LightingEngine.js` is responsible for rotating the cube. The `angle` variable is incremented by a constant value (0.01) in the `render` function in `components/LightingEngine.js`. The `requestAnimationFrame` function is used to continuously call the `render` function, ensuring smooth and constant rotation.
+
 ## License
 
 This project is licensed under the MIT License.
