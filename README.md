@@ -28,6 +28,20 @@ To run this application:
 
 The lighting engine now includes advanced shadow calculations using ray tracing for more realistic lighting. Shadow maps are generated for each light source and used to determine shadowed areas in the scene.
 
+## Lighting Environment Buttons
+
+The application now includes buttons to switch between different lighting environments. You can choose from the following environments:
+- Default
+- Sunset
+- Night
+- Studio
+
+To switch between lighting environments, simply click the corresponding button on the main page.
+
+## Cube Texture and Rotation
+
+The cube now has a fluffy texture like a carpet and spins at a constant speed. The texture is achieved by modifying the fragment shader, and the constant rotation speed is achieved by modifying the `animateCube` function in `components/LightingEngine.js`.
+
 ## License
 
 This project is licensed under the MIT License.

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { vec3, mat4, vec4 } from 'gl-matrix';
 
-const LightingEngine = () => {
+const LightingEngine = ({ currentLightingEnvironment }) => {
   const canvasRef = useRef(null);
 
   const lightSources = [
@@ -190,6 +190,16 @@ const LightingEngine = () => {
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 
+    const modelViewMatrix = mat4.create();
+    const projectionMatrix = mat4.create();
+    mat4.perspective(projectionMatrix, Math.PI / 4, gl.canvas.clientWidth / gl.canvas.clientHeight, 0.1, 100.0);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -6]);
+
+    const uModelViewMatrix = gl.getUniformLocation(program, 'u_modelViewMatrix');
+    const uProjectionMatrix = gl.getUniformLocation(program, 'u_projectionMatrix');
+    gl.uniformMatrix4fv(uModelViewMatrix, false, modelViewMatrix);
+    gl.uniformMatrix4fv(uProjectionMatrix, false, projectionMatrix);
+
     gl.drawElements(gl.TRIANGLES, cube.indices.length, gl.UNSIGNED_SHORT, 0);
   };
 
@@ -219,6 +229,9 @@ const LightingEngine = () => {
       return;
     }
 
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.enable(gl.DEPTH_TEST);
+
     const vertexShaderSource = `
       attribute vec4 a_position;
       uniform mat4 u_modelViewMatrix;
@@ -229,8 +242,12 @@ const LightingEngine = () => {
     `;
 
     const fragmentShaderSource = `
+      precision mediump float;
       void main() {
-        gl_FragColor = vec4(0.75, 0.75, 0.75, 1.0);
+        vec2 uv = gl_FragCoord.xy / vec2(800.0, 600.0);
+        float noise = fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453);
+        float fluffiness = smoothstep(0.4, 0.6, noise);
+        gl_FragColor = vec4(0.75, 0.75, 0.75, 1.0) * fluffiness;
       }
     `;
 
@@ -265,7 +282,7 @@ const LightingEngine = () => {
     };
 
     render();
-  }, []);
+  }, [currentLightingEnvironment]);
 
   return <canvas ref={canvasRef} width={800} height={600} />;
 };
