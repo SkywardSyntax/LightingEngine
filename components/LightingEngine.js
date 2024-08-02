@@ -177,6 +177,23 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
     return { vertices, indices };
   };
 
+  const calculateAmbientOcclusion = (x, y, heightMap) => {
+    const sampleRadius = 2;
+    let occlusion = 0.0;
+    for (let dy = -sampleRadius; dy <= sampleRadius; dy++) {
+      for (let dx = -sampleRadius; dx <= sampleRadius; dx++) {
+        const sampleX = x + dx;
+        const sampleY = y + dy;
+        if (heightMap[sampleY] && heightMap[sampleY][sampleX] !== undefined) {
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const heightDifference = heightMap[sampleY][sampleX] - heightMap[y][x];
+          occlusion += Math.max(0.0, heightDifference / (distance + 1.0));
+        }
+      }
+    }
+    return 1.0 - occlusion / ((2 * sampleRadius + 1) ** 2);
+  };
+
   const renderCube = (gl, program, cube) => {
     const vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
