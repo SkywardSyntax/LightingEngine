@@ -277,7 +277,43 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
     gl.uniform3fv(uLightColor, [1.0, 1.0, 1.0]);
     gl.uniform3fv(uAmbientLight, [0.2, 0.2, 0.2]);
 
-    gl.drawElements(gl.TRIANGLES, scene.indices.length, gl.UNSIGNED_SHORT, 0);
+    const frustumPlanes = calculateFrustumPlanes(modelViewMatrix, projectionMatrix);
+
+    const filteredVertices = [];
+    const filteredIndices = [];
+
+    for (let i = 0; i < scene.indices.length; i += 3) {
+      const v0 = vec3.fromValues(
+        scene.vertices[scene.indices[i] * 3],
+        scene.vertices[scene.indices[i] * 3 + 1],
+        scene.vertices[scene.indices[i] * 3 + 2]
+      );
+      const v1 = vec3.fromValues(
+        scene.vertices[scene.indices[i + 1] * 3],
+        scene.vertices[scene.indices[i + 1] * 3 + 1],
+        scene.vertices[scene.indices[i + 1] * 3 + 2]
+      );
+      const v2 = vec3.fromValues(
+        scene.vertices[scene.indices[i + 2] * 3],
+        scene.vertices[scene.indices[i + 2] * 3 + 1],
+        scene.vertices[scene.indices[i + 2] * 3 + 2]
+      );
+
+      if (isPointInFrustum(v0, frustumPlanes) || isPointInFrustum(v1, frustumPlanes) || isPointInFrustum(v2, frustumPlanes)) {
+        filteredIndices.push(scene.indices[i], scene.indices[i + 1], scene.indices[i + 2]);
+        filteredVertices.push(...v0, ...v1, ...v2);
+      }
+    }
+
+    const filteredVertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, filteredVertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(filteredVertices), gl.STATIC_DRAW);
+
+    const filteredIndexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, filteredIndexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(filteredIndices), gl.STATIC_DRAW);
+
+    gl.drawElements(gl.TRIANGLES, filteredIndices.length, gl.UNSIGNED_SHORT, 0);
   };
 
   const drawScene = (gl, program, scene) => {
@@ -286,9 +322,9 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
   };
 
   const animateCube = (scene, deltaTime) => {
-    const rotationSpeed = 0.005 * deltaTime;
+    const rotationSpeed = 0.01 * deltaTime;
     const rotationMatrix = mat4.create();
-    mat4.rotateX(rotationMatrix, rotationMatrix, rotationSpeed);
+    mat4.rotate(rotationMatrix, rotationMatrix, rotationSpeed, [0, 1, 0]);
     for (let i = 0; i < scene.vertices.length; i += 3) {
       const vertex = vec3.fromValues(scene.vertices[i], scene.vertices[i + 1], scene.vertices[i + 2]);
       vec3.transformMat4(vertex, vertex, rotationMatrix);

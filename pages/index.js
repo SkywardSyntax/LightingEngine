@@ -68,7 +68,7 @@ function Home() {
   };
 
   const handleZoomChange = (event) => {
-    setZoomLevel(event.target.value);
+    setZoomLevel(Number(event.target.value));
   };
 
   return (

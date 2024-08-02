@@ -66,6 +66,12 @@ The application now includes a zoom slider to control the zoom level of the mode
 2. Drag the slider to adjust the zoom level of the model.
 3. The model will zoom in or out based on the slider's position.
 
+## Instructions for Uploading and Rendering STL Files
+
+1. Click the "Choose File" button on the main page.
+2. Select an STL file from your computer.
+3. The uploaded STL file will be parsed and rendered in the scene.
+
 ## License
 
 This project is licensed under the MIT License.
