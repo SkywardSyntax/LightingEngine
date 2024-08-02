@@ -153,52 +153,118 @@ const LightingEngine = () => {
     return true;
   };
 
+  const createCubeGeometry = () => {
+    const vertices = new Float32Array([
+      -1, -1, -1,
+      1, -1, -1,
+      1, 1, -1,
+      -1, 1, -1,
+      -1, -1, 1,
+      1, -1, 1,
+      1, 1, 1,
+      -1, 1, 1,
+    ]);
+
+    const indices = new Uint16Array([
+      0, 1, 2, 2, 3, 0,
+      4, 5, 6, 6, 7, 4,
+      0, 1, 5, 5, 4, 0,
+      2, 3, 7, 7, 6, 2,
+      0, 3, 7, 7, 4, 0,
+      1, 2, 6, 6, 5, 1,
+    ]);
+
+    return { vertices, indices };
+  };
+
+  const renderCube = (gl, program, cube) => {
+    const vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, cube.vertices, gl.STATIC_DRAW);
+
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, cube.indices, gl.STATIC_DRAW);
+
+    const positionLocation = gl.getAttribLocation(program, 'a_position');
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
+
+    gl.drawElements(gl.TRIANGLES, cube.indices.length, gl.UNSIGNED_SHORT, 0);
+  };
+
+  const drawCube = (gl, program, cube) => {
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    renderCube(gl, program, cube);
+  };
+
+  const animateCube = (cube, angle) => {
+    const rotationMatrix = mat4.create();
+    mat4.rotateY(rotationMatrix, rotationMatrix, angle);
+    for (let i = 0; i < cube.vertices.length; i += 3) {
+      const vertex = vec3.fromValues(cube.vertices[i], cube.vertices[i + 1], cube.vertices[i + 2]);
+      vec3.transformMat4(vertex, vertex, rotationMatrix);
+      cube.vertices[i] = vertex[0];
+      cube.vertices[i + 1] = vertex[1];
+      cube.vertices[i + 2] = vertex[2];
+    }
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
+    const gl = canvas.getContext('webgl');
 
-    const heightMap = new Float32Array(canvas.width * canvas.height);
+    if (!gl) {
+      console.error('WebGL not supported');
+      return;
+    }
 
-    const shadowMaps = lightSources.map(lightSource => generateShadowMap(lightSource, heightMap));
-
-    const drawLighting = () => {
-      context.clearRect(0, 0, canvas.width, canvas.height);
-
-      const viewDir = vec3.fromValues(0, 0, 1);
-
-      const viewMatrix = mat4.lookAt(mat4.create(), vec3.fromValues(0, 0, 1), vec3.fromValues(0, 0, 0), vec3.fromValues(0, 1, 0));
-      const projectionMatrix = mat4.perspective(mat4.create(), Math.PI / 4, canvas.width / canvas.height, 0.1, 1000);
-      const frustumPlanes = calculateFrustumPlanes(viewMatrix, projectionMatrix);
-
-      for (let y = 0; y < canvas.height; y++) {
-        for (let x = 0; x < canvas.width; x++) {
-          const point = vec3.fromValues(x, y, heightMap[y][x]);
-          if (!isPointInFrustum(point, frustumPlanes)) {
-            continue;
-          }
-
-          let color = 0;
-
-          const normal = calculateNormal(x, y, heightMap);
-          const globalIllumination = calculateGlobalIllumination(x, y, heightMap);
-
-          lightSources.forEach((lightSource, index) => {
-            const lightDir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), lightSource.position, vec3.fromValues(x, y, heightMap[y][x])));
-            const shadowFactor = calculateShadow(x, y, shadowMaps[index], heightMap);
-
-            color += (1.0 - shadowFactor) * calculatePhongShading(normal, lightDir, viewDir, lightSource.intensity);
-          });
-
-          color += globalIllumination;
-
-          const clampedColor = Math.min(255, Math.max(0, Math.floor(color * 255)));
-          context.fillStyle = `rgb(${clampedColor}, ${clampedColor}, ${clampedColor})`;
-          context.fillRect(x, y, 1, 1);
-        }
+    const vertexShaderSource = `
+      attribute vec4 a_position;
+      uniform mat4 u_modelViewMatrix;
+      uniform mat4 u_projectionMatrix;
+      void main() {
+        gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;
       }
+    `;
+
+    const fragmentShaderSource = `
+      void main() {
+        gl_FragColor = vec4(0.75, 0.75, 0.75, 1.0);
+      }
+    `;
+
+    const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vertexShader, vertexShaderSource);
+    gl.compileShader(vertexShader);
+
+    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fragmentShader, fragmentShaderSource);
+    gl.compileShader(fragmentShader);
+
+    const program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('Program failed to link:', gl.getProgramInfoLog(program));
+      return;
+    }
+
+    gl.useProgram(program);
+
+    const cube = createCubeGeometry();
+    let angle = 0;
+
+    const render = () => {
+      animateCube(cube, angle);
+      drawCube(gl, program, cube);
+      angle += 0.01;
+      requestAnimationFrame(render);
     };
 
-    drawLighting();
+    render();
   }, []);
 
   return <canvas ref={canvasRef} width={800} height={600} />;
