@@ -1,8 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { vec3, mat4, vec4 } from 'gl-matrix';
 
-const LightingEngine = ({ currentLightingEnvironment }) => {
+const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) => {
   const canvasRef = useRef(null);
+  const [zoomLevelState, setZoomLevelState] = useState(zoomLevel);
 
   const lightSources = [
     { position: vec3.fromValues(400, 300, 100), intensity: 1.0 },
@@ -177,6 +178,10 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
   };
 
   const createSceneGeometry = () => {
+    if (stlGeometry) {
+      return stlGeometry;
+    }
+
     const vertices = new Float32Array([
       // Cube 1
       -1, -1, -1,
@@ -251,7 +256,7 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
     const modelViewMatrix = mat4.create();
     const projectionMatrix = mat4.create();
     mat4.perspective(projectionMatrix, Math.PI / 4, gl.canvas.clientWidth / gl.canvas.clientHeight, 0.1, 100.0);
-    mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -6]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0, -6 + zoomLevelState]);
 
     const uModelViewMatrix = gl.getUniformLocation(program, 'u_modelViewMatrix');
     const uProjectionMatrix = gl.getUniformLocation(program, 'u_projectionMatrix');
@@ -281,9 +286,9 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
   };
 
   const animateCube = (scene, deltaTime) => {
-    const rotationSpeed = 0.005;
+    const rotationSpeed = 0.005 * deltaTime;
     const rotationMatrix = mat4.create();
-    mat4.rotateY(rotationMatrix, rotationMatrix, rotationSpeed * deltaTime);
+    mat4.rotateX(rotationMatrix, rotationMatrix, rotationSpeed);
     for (let i = 0; i < scene.vertices.length; i += 3) {
       const vertex = vec3.fromValues(scene.vertices[i], scene.vertices[i + 1], scene.vertices[i + 2]);
       vec3.transformMat4(vertex, vertex, rotationMatrix);
@@ -371,7 +376,11 @@ const LightingEngine = ({ currentLightingEnvironment }) => {
 
     applyLightingEnvironment(currentLightingEnvironment);
     requestAnimationFrame(render);
-  }, [currentLightingEnvironment]);
+  }, [currentLightingEnvironment, stlGeometry, zoomLevelState]);
+
+  useEffect(() => {
+    setZoomLevelState(zoomLevel);
+  }, [zoomLevel]);
 
   return <canvas ref={canvasRef} width={800} height={600} />;
 };

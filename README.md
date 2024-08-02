@@ -50,6 +50,22 @@ The cube now has a fluffy texture like a carpet and spins at a constant speed. T
 
 The cube now rotates at a constant speed. The `animateCube` function in `components/LightingEngine.js` is responsible for rotating the cube. The `angle` variable is incremented by a constant value (0.01) in the `render` function in `components/LightingEngine.js`. The `requestAnimationFrame` function is used to continuously call the `render` function, ensuring smooth and constant rotation.
 
+## Uploading and Rendering STL Files
+
+The application now allows users to upload STL files and render them rotating instead of the default cube. To upload and render an STL file:
+
+1. Click the "Choose File" button on the main page.
+2. Select an STL file from your computer.
+3. The uploaded STL file will be parsed and rendered in the scene, rotating at a constant speed.
+
+## Using the Zoom Slider
+
+The application now includes a zoom slider to control the zoom level of the model. To use the zoom slider:
+
+1. Locate the zoom slider on the main page.
+2. Drag the slider to adjust the zoom level of the model.
+3. The model will zoom in or out based on the slider's position.
+
 ## License
 
 This project is licensed under the MIT License.
