@@ -177,7 +177,7 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
     return true;
   };
 
-  const createSceneGeometry = () => {
+  const createSceneGeometry = (gl) => {
     if (stlGeometry) {
       return stlGeometry;
     }
@@ -321,7 +321,7 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
     renderScene(gl, program, scene);
   };
 
-  const animateCube = (scene, deltaTime) => {
+  const animateCube = (gl, scene, deltaTime) => {
     const rotationSpeed = 0.01 * deltaTime;
     const rotationMatrix = mat4.create();
     mat4.rotate(rotationMatrix, rotationMatrix, rotationSpeed, [0, 1, 0]);
@@ -334,7 +334,7 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
     }
   };
 
-  const applyLightingEnvironment = (environment) => {
+  const applyLightingEnvironment = (gl, program, environment) => {
     const { ambientLight, lightColor, lightPosition } = lightingEnvironments[environment];
     const uLightPosition = gl.getUniformLocation(program, 'u_lightPosition');
     const uLightColor = gl.getUniformLocation(program, 'u_lightColor');
@@ -403,22 +403,23 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
 
     gl.useProgram(program);
 
-    const scene = createSceneGeometry();
+    const scene = createSceneGeometry(gl);
     let previousTime = 0;
 
     const render = (currentTime) => {
       const deltaTime = currentTime - previousTime;
       previousTime = currentTime;
-      animateCube(scene, deltaTime);
+      animateCube(gl, scene, deltaTime);
       drawScene(gl, program, scene);
       requestAnimationFrame(render);
     };
 
     if (gl) {
-      applyLightingEnvironment(currentLightingEnvironment);
+      applyLightingEnvironment(gl, program, currentLightingEnvironment);
       requestAnimationFrame(render);
     } else {
       console.error('WebGL context is not available');
+      return;
     }
   }, [currentLightingEnvironment, stlGeometry, zoomLevelState]);
 

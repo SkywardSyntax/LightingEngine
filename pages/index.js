@@ -16,24 +16,24 @@ function Home() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const arrayBuffer = e.target.result;
-        const geometry = parseStlFile(arrayBuffer);
+        const geometry = parseStlFile(arrayBuffer, gl);
         setStlGeometry(geometry);
       };
       reader.readAsArrayBuffer(file);
     }
   };
 
-  const parseStlFile = (arrayBuffer) => {
+  const parseStlFile = (arrayBuffer, gl) => {
     const dataView = new DataView(arrayBuffer);
     const isBinary = dataView.getUint32(80, true) !== 0;
     if (isBinary) {
-      return parseBinaryStl(dataView);
+      return parseBinaryStl(dataView, gl);
     } else {
-      return parseAsciiStl(new TextDecoder().decode(arrayBuffer));
+      return parseAsciiStl(new TextDecoder().decode(arrayBuffer), gl);
     }
   };
 
-  const parseBinaryStl = (dataView) => {
+  const parseBinaryStl = (dataView, gl) => {
     const triangles = dataView.getUint32(80, true);
     const vertices = new Float32Array(triangles * 9);
     const indices = new Uint16Array(triangles * 3);
@@ -52,7 +52,7 @@ function Home() {
     return { vertices, indices };
   };
 
-  const parseAsciiStl = (text) => {
+  const parseAsciiStl = (text, gl) => {
     const vertices = [];
     const indices = [];
     const lines = text.split('\n');
