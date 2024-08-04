@@ -72,6 +72,14 @@ The application now includes a zoom slider to control the zoom level of the mode
 2. Select an STL file from your computer.
 3. The uploaded STL file will be parsed and rendered in the scene.
 
+## Reflective Surfaces and Black Edges
+
+The cube now has black edges to make it easier to see the edges, and its surface is more reflective. The fragment shader in `components/LightingEngine.js` has been updated to include code for reflective surfaces, and the cube's appearance is controlled by the updated fragment shader. The cube's edges are now specifically highlighted in the updated implementation.
+
+## Complex Matrix Operations in Lighting Calculations
+
+The `components/LightingEngine.js` now includes more complex functions with matrices for lighting calculations. Functions like `calculateFrustumPlanes` and `isPointInFrustum` utilize matrix operations for frustum culling. The `renderScene` function applies lighting calculations using matrices for transformations and lighting. The `calculatePhongShading` function uses vector and matrix operations for Phong shading. The `generateShadowMap` function involves matrix operations for shadow calculations.
+
 ## License
 
 This project is licensed under the MIT License.

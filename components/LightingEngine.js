@@ -365,7 +365,11 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
         float diff = max(dot(vec3(0.0, 0.0, 1.0), lightDir), 0.0);
         vec3 diffuse = diff * u_lightColor;
         vec3 ambient = u_ambientLight;
-        gl_FragColor = vec4(diffuse + ambient, 1.0);
+        vec3 viewDir = normalize(vec3(0.0, 0.0, 1.0));
+        vec3 reflectDir = reflect(-lightDir, vec3(0.0, 0.0, 1.0));
+        float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+        vec3 specular = spec * u_lightColor;
+        gl_FragColor = vec4(diffuse + ambient + specular, 1.0);
       }
     `;
 
