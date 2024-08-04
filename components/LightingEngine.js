@@ -253,6 +253,10 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 
+    const normalLocation = gl.getAttribLocation(program, 'a_normal');
+    gl.enableVertexAttribArray(normalLocation);
+    gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
+
     const modelViewMatrix = mat4.create();
     const projectionMatrix = mat4.create();
     mat4.perspective(projectionMatrix, Math.PI / 4, gl.canvas.clientWidth / gl.canvas.clientHeight, 0.1, 100.0);
@@ -358,10 +362,14 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
 
     const vertexShaderSource = `
       attribute vec4 a_position;
+      attribute vec3 a_normal;
       uniform mat4 u_modelViewMatrix;
       uniform mat4 u_projectionMatrix;
+      uniform mat4 u_normalMatrix;
+      varying vec3 v_normal;
       void main() {
         gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;
+        v_normal = mat3(u_normalMatrix) * a_normal;
       }
     `;
 
@@ -370,13 +378,15 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
       uniform vec3 u_lightPosition;
       uniform vec3 u_lightColor;
       uniform vec3 u_ambientLight;
+      varying vec3 v_normal;
       void main() {
+        vec3 normal = normalize(v_normal);
         vec3 lightDir = normalize(u_lightPosition - vec3(0.0, 0.0, 0.0));
-        float diff = max(dot(vec3(0.0, 0.0, 1.0), lightDir), 0.0);
+        float diff = max(dot(normal, lightDir), 0.0);
         vec3 diffuse = diff * u_lightColor;
         vec3 ambient = u_ambientLight;
         vec3 viewDir = normalize(vec3(0.0, 0.0, 1.0));
-        vec3 reflectDir = reflect(-lightDir, vec3(0.0, 0.0, 1.0));
+        vec3 reflectDir = reflect(-lightDir, normal);
         float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
         vec3 specular = spec * u_lightColor;
         gl_FragColor = vec4(diffuse + ambient + specular, 1.0);
