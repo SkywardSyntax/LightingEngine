@@ -334,6 +334,16 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
     }
   };
 
+  const applyLightingEnvironment = (environment) => {
+    const { ambientLight, lightColor, lightPosition } = lightingEnvironments[environment];
+    const uLightPosition = gl.getUniformLocation(program, 'u_lightPosition');
+    const uLightColor = gl.getUniformLocation(program, 'u_lightColor');
+    const uAmbientLight = gl.getUniformLocation(program, 'u_ambientLight');
+    gl.uniform3fv(uLightPosition, lightPosition);
+    gl.uniform3fv(uLightColor, lightColor);
+    gl.uniform3fv(uAmbientLight, ambientLight);
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const gl = canvas.getContext('webgl');
@@ -404,18 +414,12 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
       requestAnimationFrame(render);
     };
 
-    const applyLightingEnvironment = (environment) => {
-      const { ambientLight, lightColor, lightPosition } = lightingEnvironments[environment];
-      const uLightPosition = gl.getUniformLocation(program, 'u_lightPosition');
-      const uLightColor = gl.getUniformLocation(program, 'u_lightColor');
-      const uAmbientLight = gl.getUniformLocation(program, 'u_ambientLight');
-      gl.uniform3fv(uLightPosition, lightPosition);
-      gl.uniform3fv(uLightColor, lightColor);
-      gl.uniform3fv(uAmbientLight, ambientLight);
-    };
-
-    applyLightingEnvironment(currentLightingEnvironment);
-    requestAnimationFrame(render);
+    if (gl) {
+      applyLightingEnvironment(currentLightingEnvironment);
+      requestAnimationFrame(render);
+    } else {
+      console.error('WebGL context is not available');
+    }
   }, [currentLightingEnvironment, stlGeometry, zoomLevelState]);
 
   useEffect(() => {

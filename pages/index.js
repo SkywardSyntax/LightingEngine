@@ -82,7 +82,7 @@ function Home() {
       </div>
       <input type="file" accept=".stl" onChange={handleFileUpload} />
       <input type="range" min="-10" max="10" value={zoomLevel} onChange={handleZoomChange} />
-      <LightingEngine currentLightingEnvironment={currentLightingEnvironment} stlGeometry={stlGeometry} zoomLevel={zoomLevel} />
+      <LightingEngine key={currentLightingEnvironment} currentLightingEnvironment={currentLightingEnvironment} stlGeometry={stlGeometry} zoomLevel={zoomLevel} />
     </main>
   );
 }
