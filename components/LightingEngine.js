@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { vec3, mat4, vec4 } from 'gl-matrix';
 
-const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) => {
+const LightingEngine = ({ currentLightingEnvironment, zoomLevel }) => {
   const canvasRef = useRef(null);
   const [zoomLevelState, setZoomLevelState] = useState(zoomLevel);
 
@@ -178,10 +178,6 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
   };
 
   const createSceneGeometry = (gl) => {
-    if (stlGeometry) {
-      return stlGeometry;
-    }
-
     const vertices = new Float32Array([
       // Cube 1
       -1, -1, -1,
@@ -192,15 +188,6 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
       1, -1, 1,
       1, 1, 1,
       -1, 1, 1,
-      // Cube 2
-      -2, -2, -2,
-      2, -2, -2,
-      2, 2, -2,
-      -2, 2, -2,
-      -2, -2, 2,
-      2, -2, 2,
-      2, 2, 2,
-      -2, 2, 2,
     ]);
 
     const indices = new Uint16Array([
@@ -211,13 +198,6 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
       2, 3, 7, 7, 6, 2,
       0, 3, 7, 7, 4, 0,
       1, 2, 6, 6, 5, 1,
-      // Cube 2
-      8, 9, 10, 10, 11, 8,
-      12, 13, 14, 14, 15, 12,
-      8, 9, 13, 13, 12, 8,
-      10, 11, 15, 15, 14, 10,
-      8, 11, 15, 15, 12, 8,
-      9, 10, 14, 14, 13, 9,
     ]);
 
     return { vertices, indices };
@@ -240,7 +220,7 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
     return 1.0 - occlusion / ((2 * sampleRadius + 1) ** 2);
   };
 
-  const renderScene = (gl, program, scene) => {
+  const renderScene = (gl, program, scene, currentLightingEnvironment) => {
     const vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, scene.vertices, gl.STATIC_DRAW);
@@ -317,16 +297,18 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, filteredIndexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(filteredIndices), gl.STATIC_DRAW);
 
+    applyLightingEnvironment(gl, program, currentLightingEnvironment);
+
     gl.drawElements(gl.TRIANGLES, filteredIndices.length, gl.UNSIGNED_SHORT, 0);
   };
 
-  const drawScene = (gl, program, scene) => {
+  const drawScene = (gl, program, scene, currentLightingEnvironment) => {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    renderScene(gl, program, scene);
+    renderScene(gl, program, scene, currentLightingEnvironment);
   };
 
   const animateCube = (gl, scene, deltaTime) => {
-    const rotationSpeed = 0.01 * deltaTime;
+    const rotationSpeed = 0.0005 * deltaTime;
     const rotationMatrix = mat4.create();
     mat4.rotate(rotationMatrix, rotationMatrix, rotationSpeed, [0, 1, 0]);
     for (let i = 0; i < scene.vertices.length; i += 3) {
@@ -420,7 +402,7 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
       const deltaTime = currentTime - previousTime;
       previousTime = currentTime;
       animateCube(gl, scene, deltaTime);
-      drawScene(gl, program, scene);
+      drawScene(gl, program, scene, currentLightingEnvironment);
       requestAnimationFrame(render);
     };
 
@@ -431,7 +413,7 @@ const LightingEngine = ({ currentLightingEnvironment, stlGeometry, zoomLevel }) 
       console.error('WebGL context is not available');
       return;
     }
-  }, [currentLightingEnvironment, stlGeometry, zoomLevelState]);
+  }, [currentLightingEnvironment, zoomLevelState]);
 
   useEffect(() => {
     setZoomLevelState(zoomLevel);
