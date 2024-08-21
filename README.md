@@ -75,6 +75,5 @@ The lighting engine has been optimized for efficiency while maintaining renderin
 - The `calculateGlobalIllumination` function now uses a more efficient approach to reduce nested loops. The approach involves precomputing indirect lighting contributions and storing them in a lookup table, which can be quickly accessed during rendering.
 - The `renderScene` function has been optimized by reducing the number of draw calls and minimizing state changes. Techniques such as batching and instancing are used to group similar objects and render them in a single draw call, reducing the overhead associated with multiple draw calls.
 
-## License
-
-This project is licensed under the MIT License.
+## Demo
+![demo](demo.png)
